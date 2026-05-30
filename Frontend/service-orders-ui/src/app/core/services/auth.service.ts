@@ -1,18 +1,31 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { LoginRequest, LoginResponse } from '../models/user.model';
-import { environment } from '../../../enviroments';
+import { HttpClient } from "@angular/common/http";
+import { LoginRequest, LoginResponse } from "../models/user.model";
+import { environment } from "../../../enviroments";
+import { Injectable } from "@angular/core";
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private api = `${environment.apiUrl}/Auth`;
 
-  constructor(private http: HttpClient) {}
+  private api =
+    `${environment.apiUrl}/Auth`;
+
+  constructor(
+    private http: HttpClient
+  ) {}
 
   login(data: LoginRequest) {
-    return this.http.post<LoginResponse>(`${this.api}/login`, data);
+    return this.http.post<LoginResponse>(
+      `${this.api}/login`,
+      data
+    );
+  }
+
+  getMe() {
+    return this.http.get(
+      `${this.api}/me`
+    );
   }
 
   saveToken(token: string) {
@@ -25,9 +38,5 @@ export class AuthService {
 
   logout() {
     localStorage.removeItem('token');
-  }
-
-  isAuthenticated() {
-    return !!this.getToken();
   }
 }
