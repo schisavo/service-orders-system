@@ -4,76 +4,74 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using ServiceOrdersSystem.Application.DTOs.Auth;
-using ServiceOrdersSystem.Infrastructure.Repositories;
+using ServiceOrdersSystem.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 
-namespace ServiceOrdersSystem.Api.Controllers
+namespace ServiceOrdersSystem.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    private readonly IUserRepository _userRepository;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<AuthController> _logger;
+
+    public AuthController(IUserRepository userRepository, IConfiguration configuration, ILogger<AuthController> logger)
     {
-        private readonly UserRepository _userRepository;
-        private readonly IConfiguration _configuration;
+        _userRepository = userRepository;
+        _configuration = configuration;
+        _logger = logger;
+    }
 
-        public AuthController(UserRepository userRepository, IConfiguration configuration)
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        var user = await _userRepository.GetByUsername(request.Username);
+
+        if (user == null || user.PasswordHash != request.Password) // ⚠️ Aquí deberías usar hash real
+            return Unauthorized(new { Message = "Credenciales inválidas" });
+
+        var claims = new[]
         {
-            _userRepository = userRepository;
-            _configuration = configuration;
-        }
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+        };
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured"))
+        );
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.Now.AddHours(1),
+            signingCredentials: creds
+        );
+
+        _logger.LogInformation("User {Username} logged in", user.Username);
+
+        return Ok(new LoginResponse
         {
-            var user = await _userRepository.GetByUsername(request.Username);
+            Token = new JwtSecurityTokenHandler().WriteToken(token)
+        });
+    }
 
-            if (user == null || user.PasswordHash != request.Password) // ⚠️ Aquí deberías usar hash real
-                return Unauthorized("Credenciales inválidas");
+    [HttpGet("me")]
+    [Authorize]
+    public IActionResult Me()
+    {
+        var username = User.Identity?.Name;
 
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
-            };
+        if (string.IsNullOrEmpty(username))
+            return Unauthorized(new { Message = "No hay sesión activa" });
 
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured"))
-            );
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddHours(1),
-                signingCredentials: creds
-            );
-
-            return Ok(new LoginResponse
-            {
-                Token = new JwtSecurityTokenHandler().WriteToken(token)
-            });
-        }
-
-
-        // User Context
-        [HttpGet("me")]
-        [Authorize] // requiere JWT
-        public IActionResult Me()
+        return Ok(new
         {
-            var username = User.Identity?.Name;
-
-            if (string.IsNullOrEmpty(username))
-                return Unauthorized("No hay sesión activa");
-
-            // Aquí podrías consultar el repositorio para obtener el Id real del usuario
-            // pero como mínimo devolvemos lo que viene del token
-            return Ok(new
-            {
-                id = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-                username = username
-            });
-        }
-
+            id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
+            username = username
+        });
     }
 }

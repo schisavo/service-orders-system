@@ -9,4 +9,13 @@ public interface IServiceOrderRepository
     Task<int> CreateAsync(ServiceOrder order);
     Task<bool> UpdateAsync(ServiceOrder order);
     Task<bool> DeleteAsync(int id);
+    Task<IEnumerable<ServiceOrder>> FilterOrders(
+        string? estado,
+        string? tecnico,
+        string? especialidad,
+        string? cliente,
+        string? documento,
+        DateTime? fechaInicio,
+        DateTime? fechaFin
+    );
 }

@@ -1,65 +1,108 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ServiceOrdersSystem.Application.DTOs;
+using ServiceOrdersSystem.Application.Interfaces;
 using ServiceOrdersSystem.Domain.Entities;
-using ServiceOrdersSystem.Infrastructure.Repositories;
 
-namespace ServiceOrdersSystem.Api.Controllers
+namespace ServiceOrdersSystem.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class TechniciansController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    [Authorize] // Protegido con JWT
-    public class TechniciansController : ControllerBase
+    private readonly ITechnicianRepository _repository;
+    private readonly ILogger<TechniciansController> _logger;
+
+    public TechniciansController(ITechnicianRepository repository, ILogger<TechniciansController> logger)
     {
-        private readonly TechnicianRepository _repository;
+        _repository = repository;
+        _logger = logger;
+    }
 
-        public TechniciansController(TechnicianRepository repository)
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var technicians = await _repository.GetAllAsync();
+        var dtos = technicians.Select(t => new TechnicianDto
         {
-            _repository = repository;
-        }
+            Id = t.Id,
+            FullName = t.FullName,
+            Phone = t.Phone,
+            Specialty = t.Specialty
+        });
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        return Ok(dtos);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var technician = await _repository.GetByIdAsync(id);
+        if (technician == null) return NotFound(new { Message = "Technician not found" });
+
+        var dto = new TechnicianDto
         {
-            var technicians = await _repository.GetAll();
-            return Ok(technicians);
-        }
+            Id = technician.Id,
+            FullName = technician.FullName,
+            Phone = technician.Phone,
+            Specialty = technician.Specialty
+        };
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        return Ok(dto);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] TechnicianDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var technician = new Technician
         {
-            var technician = await _repository.GetById(id);
-            if (technician == null) return NotFound();
-            return Ok(technician);
-        }
+            FullName = dto.FullName,
+            Phone = dto.Phone,
+            Specialty = dto.Specialty
+        };
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Technician technician)
+        var id = await _repository.CreateAsync(technician);
+        dto.Id = id;
+
+        _logger.LogInformation("Technician created with Id {Id}", id);
+
+        return CreatedAtAction(nameof(GetById), new { id }, dto);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] TechnicianDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var technician = new Technician
         {
-            if (string.IsNullOrWhiteSpace(technician.FullName))
-                return BadRequest("Nombre requerido");
-            if (string.IsNullOrWhiteSpace(technician.Specialty))
-                return BadRequest("Especialidad requerida");
-            if (string.IsNullOrWhiteSpace(technician.Phone))
-                return BadRequest("Teléfono requerido");
+            Id = id,
+            FullName = dto.FullName,
+            Phone = dto.Phone,
+            Specialty = dto.Specialty
+        };
 
-            var id = await _repository.Create(technician);
-            technician.Id = id;
-            return CreatedAtAction(nameof(GetById), new { id }, technician);
-        }
+        var updated = await _repository.UpdateAsync(technician);
+        if (!updated) return NotFound(new { Message = "Technician not found" });
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Technician technician)
-        {
-            technician.Id = id;
-            await _repository.Update(technician);
-            return NoContent();
-        }
+        _logger.LogInformation("Technician updated with Id {Id}", id);
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            await _repository.Delete(id);
-            return NoContent();
-        }
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var deleted = await _repository.DeleteAsync(id);
+        if (!deleted) return NotFound(new { Message = "Technician not found" });
+
+        _logger.LogInformation("Technician deleted with Id {Id}", id);
+
+        return NoContent();
     }
 }

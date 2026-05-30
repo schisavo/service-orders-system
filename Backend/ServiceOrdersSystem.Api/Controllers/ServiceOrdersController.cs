@@ -1,85 +1,142 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ServiceOrdersSystem.Application.DTOs;
+using ServiceOrdersSystem.Application.Interfaces;
 using ServiceOrdersSystem.Domain.Entities;
-using ServiceOrdersSystem.Infrastructure.Repositories;
 
-namespace ServiceOrdersSystem.Api.Controllers
+namespace ServiceOrdersSystem.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class ServiceOrdersController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    [Authorize] // Protegido con JWT
-    public class ServiceOrdersController : ControllerBase
+    private readonly IServiceOrderRepository _repository;
+    private readonly ILogger<ServiceOrdersController> _logger;
+
+    public ServiceOrdersController(IServiceOrderRepository repository, ILogger<ServiceOrdersController> logger)
     {
-        private readonly ServiceOrderRepository _repository;
+        _repository = repository;
+        _logger = logger;
+    }
 
-        public ServiceOrdersController(ServiceOrderRepository repository)
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var orders = await _repository.GetAllAsync();
+        var dtos = orders.Select(o => new ServiceOrderDto
         {
-            _repository = repository;
-        }
+            Id = o.Id,
+            CreatedAt = o.CreatedAt,
+            Status = o.Status,
+            Description = o.Description,
+            TechnicianId = o.TechnicianId,
+            ClientId = o.ClientId
+        });
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        return Ok(dtos);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var order = await _repository.GetByIdAsync(id);
+        if (order == null) return NotFound(new { Message = "Service order not found" });
+
+        var dto = new ServiceOrderDto
         {
-            var orders = await _repository.GetAll();
-            return Ok(orders);
-        }
+            Id = order.Id,
+            CreatedAt = order.CreatedAt,
+            Status = order.Status,
+            Description = order.Description,
+            TechnicianId = order.TechnicianId,
+            ClientId = order.ClientId
+        };
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        return Ok(dto);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] ServiceOrderDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
         {
-            var order = await _repository.GetById(id);
-            if (order == null) return NotFound();
-            return Ok(order);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] ServiceOrder order)
-        {
-            order.CreatedAt = DateTime.Now;
-
-            try
+            var order = new ServiceOrder
             {
-                var id = await _repository.Create(order);
-                order.Id = id;
-                return CreatedAtAction(nameof(GetById), new { id }, order);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
+                CreatedAt = DateTime.Now,
+                Status = dto.Status,
+                Description = dto.Description,
+                TechnicianId = dto.TechnicianId,
+                ClientId = dto.ClientId
+            };
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] ServiceOrder order)
+            var id = await _repository.CreateAsync(order);
+            dto.Id = id;
+            dto.CreatedAt = order.CreatedAt;
+
+            _logger.LogInformation("Service order created with Id {Id}", id);
+
+            return CreatedAtAction(nameof(GetById), new { id }, dto);
+        }
+        catch (Exception ex)
         {
-            order.Id = id;
-            await _repository.Update(order);
-            return NoContent();
+            _logger.LogError(ex, "Error creating service order");
+            return BadRequest(new { Message = "Error creating service order" });
         }
+    }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] ServiceOrderDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var order = new ServiceOrder
         {
-            await _repository.Delete(id);
-            return NoContent();
-        }
+            Id = id,
+            CreatedAt = dto.CreatedAt,
+            Status = dto.Status,
+            Description = dto.Description,
+            TechnicianId = dto.TechnicianId,
+            ClientId = dto.ClientId
+        };
 
-        // Filter 
-        [HttpGet("filtro")]
-        public async Task<IActionResult> Filter(
-            [FromQuery] string? estado,
-            [FromQuery] string? tecnico,
-            [FromQuery] string? especialidad,
-            [FromQuery] string? cliente,
-            [FromQuery] string? documento,
-            [FromQuery] DateTime? fechaInicio,
-            [FromQuery] DateTime? fechaFin)
-        {
-            var result = await _repository.FilterOrders(
-                estado, tecnico, especialidad, cliente, documento, fechaInicio, fechaFin
-            );
-            return Ok(result);
-        }
+        var updated = await _repository.UpdateAsync(order);
+        if (!updated) return NotFound(new { Message = "Service order not found" });
 
+        _logger.LogInformation("Service order updated with Id {Id}", id);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var deleted = await _repository.DeleteAsync(id);
+        if (!deleted) return NotFound(new { Message = "Service order not found" });
+
+        _logger.LogInformation("Service order deleted with Id {Id}", id);
+
+        return NoContent();
+    }
+
+    [HttpGet("filtro")]
+    public async Task<IActionResult> Filter(
+        [FromQuery] string? estado,
+        [FromQuery] string? tecnico,
+        [FromQuery] string? especialidad,
+        [FromQuery] string? cliente,
+        [FromQuery] string? documento,
+        [FromQuery] DateTime? fechaInicio,
+        [FromQuery] DateTime? fechaFin)
+    {
+        var result = await _repository.FilterOrders(
+            estado, tecnico, especialidad, cliente, documento, fechaInicio, fechaFin
+        );
+
+        return Ok(result);
     }
 }

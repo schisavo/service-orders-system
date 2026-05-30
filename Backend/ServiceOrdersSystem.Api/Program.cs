@@ -4,6 +4,7 @@ using System.Text;
 using ServiceOrdersSystem.Infrastructure.Data;
 using ServiceOrdersSystem.Infrastructure.Repositories;
 using Microsoft.OpenApi;
+using ServiceOrdersSystem.Application.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,14 +26,19 @@ builder.Services.AddSwaggerGen(options =>
 
 // Dapper context
 builder.Services.AddSingleton<DapperContext>();
+
 // User Login Response
-builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
 // Technician
-builder.Services.AddScoped<TechnicianRepository>();
+builder.Services.AddScoped<ITechnicianRepository, TechnicianRepository>();
+
 // Client
-builder.Services.AddScoped<ClientRepository>();
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
+
 // Service Order
-builder.Services.AddScoped<ServiceOrderRepository>();
+builder.Services.AddScoped<IServiceOrderRepository, ServiceOrderRepository>();
+
 
 
 
