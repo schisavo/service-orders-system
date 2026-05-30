@@ -17,7 +17,11 @@ builder.Services.AddSwaggerGen(c =>
 
 // Dapper context
 builder.Services.AddSingleton<DapperContext>();
+// User Login Response
 builder.Services.AddScoped<UserRepository>();
+// Technician
+builder.Services.AddScoped<TechnicianRepository>();
+
 
 // JWT
 builder.Services.AddAuthentication("Bearer")
