@@ -21,6 +21,9 @@ builder.Services.AddSingleton<DapperContext>();
 builder.Services.AddScoped<UserRepository>();
 // Technician
 builder.Services.AddScoped<TechnicianRepository>();
+// Client
+builder.Services.AddScoped<ClientRepository>();
+
 
 
 // JWT
