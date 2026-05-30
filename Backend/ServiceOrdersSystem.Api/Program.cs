@@ -5,8 +5,17 @@ using ServiceOrdersSystem.Infrastructure.Data;
 using ServiceOrdersSystem.Infrastructure.Repositories;
 using Microsoft.OpenApi;
 using ServiceOrdersSystem.Application.Interfaces;
+using System.Data;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configuración de conexión a PostgreSQL
+builder.Services.AddScoped<IDbConnection>(sp =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    return new NpgsqlConnection(connectionString);
+});
 
 // Add services
 builder.Services.AddControllers();
@@ -40,8 +49,6 @@ builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IServiceOrderRepository, ServiceOrderRepository>();
 
 
-
-
 // JWT
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer(options =>
@@ -55,7 +62,10 @@ builder.Services.AddAuthentication("Bearer")
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            Encoding.UTF8.GetBytes(
+                builder.Configuration["Jwt:Key"] 
+                ?? throw new InvalidOperationException("JWT Key not configured")
+            ))
         };
     });
 
