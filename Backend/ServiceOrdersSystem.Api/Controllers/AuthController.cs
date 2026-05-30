@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using ServiceOrdersSystem.Application.DTOs.Auth;
 using ServiceOrdersSystem.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ServiceOrdersSystem.Api.Controllers
 {
@@ -53,5 +54,26 @@ namespace ServiceOrdersSystem.Api.Controllers
                 Token = new JwtSecurityTokenHandler().WriteToken(token)
             });
         }
+
+
+        // User Context
+        [HttpGet("me")]
+        [Authorize] // requiere JWT
+        public IActionResult Me()
+        {
+            var username = User.Identity?.Name;
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized("No hay sesión activa");
+
+            // Aquí podrías consultar el repositorio para obtener el Id real del usuario
+            // pero como mínimo devolvemos lo que viene del token
+            return Ok(new
+            {
+                id = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+                username = username
+            });
+        }
+
     }
 }
