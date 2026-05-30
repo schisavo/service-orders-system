@@ -23,6 +23,8 @@ builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<TechnicianRepository>();
 // Client
 builder.Services.AddScoped<ClientRepository>();
+// Service Order
+builder.Services.AddScoped<ServiceOrderRepository>();
 
 
 
