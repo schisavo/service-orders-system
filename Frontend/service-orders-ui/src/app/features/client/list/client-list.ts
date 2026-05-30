@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { ClientService } from '../../../core/services/client.service';
 import { Client } from '../../../core/models/client.model';
 import { CommonModule } from '@angular/common';
@@ -14,7 +14,9 @@ clients: Client[] = [];
   errorMessage = '';
   loading = false;
 
-  constructor(private clientService: ClientService) {}
+  constructor(private clientService: ClientService,
+  private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     this.loadClients();
@@ -22,14 +24,16 @@ clients: Client[] = [];
 
   loadClients() {
     this.loading = true;
+
     this.clientService.getAll().subscribe({
       next: (res) => {
         this.clients = res;
         this.loading = false;
-      },
-      error: () => {
-        this.errorMessage = 'Error al cargar clientes';
-        this.loading = false;
+
+        this.cdr.detectChanges();
+
+        console.log('Respuesta:', res);
+        console.log('Loading:', this.loading);
       }
     });
   }
