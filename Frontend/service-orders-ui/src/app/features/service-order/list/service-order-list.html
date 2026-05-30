@@ -54,9 +54,9 @@
 }
 
 @if (showModal) {
-  <app-service-order-modal
-    [order]="selectedOrder"
-    (close)="closeModal()"
-    (saved)="onSaved()">
-  </app-service-order-modal>
+    <app-service-order-modal
+        [order]="selectedOrder"
+        (close)="closeModal()"
+        (saved)="onSaved()">
+    </app-service-order-modal>
 }

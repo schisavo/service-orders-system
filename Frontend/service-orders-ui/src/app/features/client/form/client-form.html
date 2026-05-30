@@ -1,9 +1,0 @@
-<div class="w-full max-w-md rounded-xl shadow-lg p-6">
-    <form (ngSubmit)="save()" class="space-y-4">
-        <input [(ngModel)]="client.fullName" name="fullName" placeholder="Nombre completo" class="w-full border p-2 rounded" />
-        <input [(ngModel)]="client.documentNumber" name="documentNumber" placeholder="Documento" class="w-full border p-2 rounded" />
-        <input [(ngModel)]="client.address" name="address" placeholder="Dirección" class="w-full border p-2 rounded" />
-        <input [(ngModel)]="client.phone" name="phone" placeholder="Teléfono" class="w-full border p-2 rounded" />
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Guardar</button>
-    </form>
-</div>
