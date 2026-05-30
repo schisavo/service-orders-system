@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ServiceOrdersSystem.Api/ServiceOrdersSystem.Api.csproj" />
+  <Project Path="ServiceOrdersSystem.Application/ServiceOrdersSystem.Application.csproj" />
+  <Project Path="ServiceOrdersSystem.Domain/ServiceOrdersSystem.Domain.csproj" />
+  <Project Path="ServiceOrdersSystem.Infrastructure/ServiceOrdersSystem.Infrastructure.csproj" />
+  <Project Path="ServiceOrdersSystem.Tests/ServiceOrdersSystem.Tests.csproj" />
+</Solution>
