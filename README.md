@@ -5,19 +5,30 @@ Sistema full stack desarrollado como prueba técnica para la gestión de órdene
 ---
 
 ## Tecnologías utilizadas
+### Database
+---
+Se utiliza Dapper, consultas SQL manuales y JWT auth.
 
+ - Ejecutarlo en PostgreSQL
+      Opción 1: pgAdmin
+            - Open Query Tool
+            - Pegas el script
+            - Ejecutas
+     Opción 2: Terminal
+            - psql -U postgres -d your_database -f database.sql
+---
 ### Backend
 - .NET 6+ Web API
 - Dapper (acceso a datos)
 - JWT Authentication
 - Oracle / PostgreSQL
-
+---
 ### Frontend
 - Angular 14+
 - Reactive Forms
 - Standalone Components
 - TailwindCSS (opcional)
-
+---
 ### Control de versiones
 - Git / GitHub
 
