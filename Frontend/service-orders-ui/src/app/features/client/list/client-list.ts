@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { ClientService } from '../../../core/services/client.service';
 import { Client } from '../../../core/models/client.model';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-client-list',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './client-list.html',
   styleUrl: './client-list.css',
 })

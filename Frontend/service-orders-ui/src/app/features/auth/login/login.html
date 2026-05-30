@@ -1,0 +1,23 @@
+<div class="min-h-screen w-2xl flex items-center justify-center bg-linear-to-br from-slate-900 to-slate-700">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8">
+        <h2 class="text-2xl font-bold text-center text-slate-800 mb-6">Bienvenido 👋</h2>
+
+        <form (ngSubmit)="login()" class="space-y-4">
+        <input [(ngModel)]="username" name="username" placeholder="Usuario"
+            class="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+
+        <input [(ngModel)]="password" name="password" type="password" placeholder="Contraseña"
+            class="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+
+        <button type="submit"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition">
+            <span *ngIf="!loading">Ingresar</span>
+            <span *ngIf="loading">Cargando...</span>
+        </button>
+        </form>
+
+        <div *ngIf="errorMessage" class="text-red-600 text-center mt-4">
+        {{errorMessage}}
+        </div>
+    </div>
+</div>
