@@ -1,0 +1,64 @@
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+
+    <div class="bg-white rounded-lg shadow-lg w-150 p-6">
+
+        <h2 class="text-xl font-bold mb-4">
+            {{ isEditMode ? 'Editar Técnico' : 'Crear Técnico' }}
+        </h2>
+
+        <form [formGroup]="technicianForm">
+
+            <div class="mb-4">
+                <label class="block mb-1">
+                    Nombre
+                </label>
+
+                <input
+                    type="text"
+                    formControlName="fullName"
+                    class="w-full border p-2 rounded">
+            </div>
+
+            <div class="mb-4">
+                <label class="block mb-1">
+                    Teléfono
+                </label>
+
+                <input
+                    type="text"
+                    formControlName="phone"
+                    class="w-full border p-2 rounded">
+            </div>
+
+            <div class="mb-4">
+                <label class="block mb-1">
+                    Especialidad
+                </label>
+
+                <input
+                    type="text"
+                    formControlName="specialty"
+                    class="w-full border p-2 rounded">
+            </div>
+
+        </form>
+
+        <div class="flex justify-end gap-2 mt-4">
+
+            <button
+                (click)="closeModal()"
+                class="px-4 py-2 bg-gray-500 text-white rounded">
+                Cancelar
+            </button>
+
+            <button
+                (click)="saveTechnician()"
+                class="px-4 py-2 bg-blue-600 text-white rounded">
+                {{ isEditMode ? 'Actualizar' : 'Guardar' }}
+            </button>
+
+        </div>
+
+    </div>
+
+</div>

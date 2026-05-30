@@ -1,37 +1,62 @@
+<div class="flex justify-between items-center mb-4">
+
+    <h2 class="text-xl font-semibold">Órdenes</h2>
+
+    <button
+        (click)="openCreate()"
+        class="bg-green-600 text-white px-4 py-2 rounded">
+        + Nueva Orden
+    </button>
+
+</div>
+
 @if (loading) {
     <div>Cargando...</div>
 }
+
 @if (errorMessage) {
     <div class="text-red-600">{{ errorMessage }}</div>
 }
-@if (orders.length === 0 && !loading && !errorMessage) {
-    <div class="text-gray-500 italic mt-4">No hay órdenes</div>
+
+@if (orders.length === 0 && !loading) {
+    <div class="text-gray-500">No hay órdenes</div>
 } @else {
+
     <table class="w-full border mt-4">
         <thead class="bg-slate-100">
         <tr>
-            <th class="p-2">Fecha</th>
-            <th class="p-2">Descripción</th>
             <th class="p-2">Estado</th>
+            <th class="p-2">Descripción</th>
             <th class="p-2">Acciones</th>
         </tr>
         </thead>
+
         <tbody>
         @for (order of orders; track order.id) {
-            <tr class="hover:bg-slate-50">
-            <td class="p-2">{{ order.createdAt | date }}</td>
+            <tr>
+            <td class="p-2">{{ order.status }}</td>
             <td class="p-2">{{ order.description }}</td>
+
             <td class="p-2">
-                <span [class]="getBadgeClass(order.status)">
-                {{ order.status }}
-                </span>
-            </td>
-            <td class="p-2">
-                <button class="text-blue-600">Editar</button>
-                <button (click)="deleteOrder(order.id)" class="text-red-600 ml-2">Eliminar</button>
+                <button (click)="openEdit(order)" class="bg-blue-600 text-white px-3 py-1 rounded">
+                Editar
+                </button>
+
+                <button (click)="deleteOrder(order.id)" class="bg-red-600 text-white px-3 py-1 rounded ml-2">
+                Eliminar
+                </button>
             </td>
             </tr>
         }
         </tbody>
+
     </table>
+}
+
+@if (showModal) {
+  <app-service-order-modal
+    [order]="selectedOrder"
+    (close)="closeModal()"
+    (saved)="onSaved()">
+  </app-service-order-modal>
 }

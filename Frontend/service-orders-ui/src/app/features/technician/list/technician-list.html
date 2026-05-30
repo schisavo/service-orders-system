@@ -1,0 +1,109 @@
+<div class="flex justify-between items-center mb-4">
+    <h2 class="text-xl font-semibold">
+        Técnicos
+    </h2>
+
+    <button
+        (click)="openCreateModal()"
+        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+        + Nuevo Técnico
+    </button>
+</div>
+
+@if (loading) {
+    <div>Cargando...</div>
+}
+
+@if (errorMessage) {
+    <div class="text-red-600">
+        {{ errorMessage }}
+    </div>
+}
+
+@if (technicians.length === 0 && !loading && !errorMessage) {
+
+    <div class="text-gray-500 italic mt-4">
+        No hay registros
+    </div>
+
+} @else {
+
+    <table class="w-full border border-slate-300 mt-4">
+
+        <thead class="bg-slate-100">
+            <tr>
+                <th class="p-3 text-center border-b">
+                    Nombre
+                </th>
+
+                <th class="p-3 text-center border-b">
+                    Especialidad
+                </th>
+
+                <th class="p-3 text-center border-b">
+                    Teléfono
+                </th>
+
+                <th class="p-3 text-center border-b">
+                    Acciones
+                </th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            @for (technician of technicians; track technician.id) {
+
+                <tr class="hover:bg-slate-50 border-b">
+
+                    <td class="p-3 text-center">
+                        {{ technician.fullName }}
+                    </td>
+
+                    <td class="p-3 text-center">
+                        {{ technician.specialty }}
+                    </td>
+
+                    <td class="p-3 text-center">
+                        {{ technician.phone }}
+                    </td>
+
+                    <td class="p-3">
+
+                        <div class="flex justify-center gap-2">
+
+                            <button
+                                (click)="openEditModal(technician)"
+                                class="bg-blue-600 text-white px-3 py-1 rounded">
+                                Editar
+                            </button>
+
+                            <button
+                                (click)="deleteTechnicians(technician.id)"
+                                class="bg-red-600 text-white px-3 py-1 rounded">
+                                Eliminar
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+            }
+
+        </tbody>
+
+    </table>
+
+}
+
+@if(showModal){
+
+    <app-technician-modal
+        [technician]="selectedTechnician"
+        (close)="closeModal()"
+        (saved)="onSaved()">
+    </app-technician-modal>
+
+}

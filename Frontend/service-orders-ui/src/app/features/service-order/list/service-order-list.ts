@@ -1,54 +1,72 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
 import { ServiceOrder } from '../../../core/models/service-order.model';
 import { ServiceOrderService } from '../../../core/services/order.service';
-import { CommonModule } from '@angular/common';
+import { ServiceOrderModal } from '../modal/service-order-modal';
 
 @Component({
   selector: 'app-service-order-list',
-  imports: [CommonModule],
+  standalone: true,
+  imports: [CommonModule, ServiceOrderModal],
   templateUrl: './service-order-list.html',
-  styleUrl: './service-order-list.css',
 })
-export class ServiceOrderList {
+export class ServiceOrderList implements OnInit {
+
   orders: ServiceOrder[] = [];
-  errorMessage = '';
+
   loading = false;
+  errorMessage = '';
+
+  showModal = false;
+  selectedOrder: ServiceOrder | null = null;
 
   constructor(private serviceOrderService: ServiceOrderService) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadOrders();
   }
 
-  loadOrders() {
+  loadOrders(): void {
     this.loading = true;
+
     this.serviceOrderService.getAll().subscribe({
       next: (res) => {
         this.orders = res;
         this.loading = false;
       },
       error: () => {
-        this.errorMessage = 'Error al cargar órdenes';
+        this.errorMessage = 'Error cargando órdenes';
         this.loading = false;
       }
     });
   }
 
-  deleteOrder(id:number) {
-    if(confirm('¿Eliminar orden de servicio?')) {
-      this.serviceOrderService.delete(id).subscribe({
-        next: () => this.loadOrders(),
-        error: () => this.errorMessage = 'Error al eliminar orden'
-      });
-    }
+  openCreate(): void {
+    this.selectedOrder = null;
+    this.showModal = true;
   }
 
-  getBadgeClass(status:string) {
-    switch(status) {
-      case 'Pendiente': return 'bg-yellow-200 text-yellow-800 px-2 py-1 rounded';
-      case 'En progreso': return 'bg-blue-200 text-blue-800 px-2 py-1 rounded';
-      case 'Finalizada': return 'bg-green-200 text-green-800 px-2 py-1 rounded';
-      default: return 'bg-gray-200 text-gray-800 px-2 py-1 rounded';
-    }
+  openEdit(order: ServiceOrder): void {
+    this.selectedOrder = order;
+    this.showModal = true;
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+  }
+
+  onSaved(): void {
+    this.closeModal();
+    this.loadOrders();
+  }
+
+  deleteOrder(id: number): void {
+    if (!confirm('¿Eliminar orden?')) return;
+
+    this.serviceOrderService.delete(id).subscribe({
+      next: () => this.loadOrders(),
+      error: () => this.errorMessage = 'Error eliminando orden'
+    });
   }
 }
