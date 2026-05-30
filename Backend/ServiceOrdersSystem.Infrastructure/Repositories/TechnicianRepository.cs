@@ -1,53 +1,86 @@
+using System.Data;
 using Dapper;
 using ServiceOrdersSystem.Domain.Entities;
-using ServiceOrdersSystem.Infrastructure.Data;
+using ServiceOrdersSystem.Application.Interfaces;
 
-namespace ServiceOrdersSystem.Infrastructure.Repositories
+namespace ServiceOrdersSystem.Infrastructure.Repositories;
+
+public class TechnicianRepository : ITechnicianRepository
 {
-    public class TechnicianRepository
+    private readonly IDbConnection _db;
+
+    public TechnicianRepository(IDbConnection db)
     {
-        private readonly DapperContext _context;
+        _db = db;
+    }
 
-        public TechnicianRepository(DapperContext context)
-        {
-            _context = context;
-        }
+    public async Task<IEnumerable<Technician>> GetAllAsync()
+    {
+        var sql = @"
+            SELECT *
+            FROM Technicians
+            ORDER BY Id";
 
-        public async Task<IEnumerable<Technician>> GetAll()
-        {
-            using var connection = _context.CreateConnection();
-            return await connection.QueryAsync<Technician>("SELECT * FROM Technicians");
-        }
+        return await _db.QueryAsync<Technician>(sql);
+    }
 
-        public async Task<Technician?> GetById(int id)
-        {
-            using var connection = _context.CreateConnection();
-            return await connection.QuerySingleOrDefaultAsync<Technician>(
-                "SELECT * FROM Technicians WHERE Id = @Id", new { Id = id });
-        }
+    public async Task<Technician?> GetByIdAsync(int id)
+    {
+        var sql = @"
+            SELECT *
+            FROM Technicians
+            WHERE Id = @Id";
 
-        public async Task<int> Create(Technician technician)
-        {
-            using var connection = _context.CreateConnection();
-            var sql = @"INSERT INTO Technicians (FullName, Phone, Specialty)
-                        VALUES (@FullName, @Phone, @Specialty)
-                        RETURNING Id;";
-            return await connection.ExecuteScalarAsync<int>(sql, technician);
-        }
+        return await _db.QueryFirstOrDefaultAsync<Technician>(
+            sql,
+            new { Id = id }
+        );
+    }
 
-        public async Task Update(Technician technician)
-        {
-            using var connection = _context.CreateConnection();
-            var sql = @"UPDATE Technicians
-                        SET FullName = @FullName, Phone = @Phone, Specialty = @Specialty
-                        WHERE Id = @Id;";
-            await connection.ExecuteAsync(sql, technician);
-        }
+    public async Task<int> CreateAsync(Technician technician)
+    {
+        var sql = @"
+            INSERT INTO Technicians
+            (
+                FullName,
+                Phone,
+                Specialty
+            )
+            VALUES
+            (
+                @FullName,
+                @Phone,
+                @Specialty
+            )
+            RETURNING Id";
 
-        public async Task Delete(int id)
-        {
-            using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("DELETE FROM Technicians WHERE Id = @Id", new { Id = id });
-        }
+        return await _db.ExecuteScalarAsync<int>(
+            sql,
+            technician
+        );
+    }
+
+    public async Task<bool> UpdateAsync(Technician technician)
+    {
+        var sql = @"
+            UPDATE Technicians
+            SET
+                FullName = @FullName,
+                Phone = @Phone,
+                Specialty = @Specialty
+            WHERE Id = @Id";
+
+        var rows = await _db.ExecuteAsync(sql, technician);
+        return rows > 0;
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var sql = @"
+            DELETE FROM Technicians
+            WHERE Id = @Id";
+
+        var rows = await _db.ExecuteAsync(sql, new { Id = id });
+        return rows > 0;
     }
 }
