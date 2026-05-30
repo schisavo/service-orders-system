@@ -1,63 +1,60 @@
+using System.Data;
 using Dapper;
 using ServiceOrdersSystem.Domain.Entities;
-using ServiceOrdersSystem.Infrastructure.Data;
+using ServiceOrdersSystem.Application.Interfaces;
 
-namespace ServiceOrdersSystem.Infrastructure.Repositories
+namespace ServiceOrdersSystem.Infrastructure.Repositories;
+
+public class ClientRepository : IClientRepository
 {
-    public class ClientRepository
+    private readonly IDbConnection _db;
+
+    public ClientRepository(IDbConnection db)
     {
-        private readonly DapperContext _context;
+        _db = db;
+    }
 
-        public ClientRepository(DapperContext context)
-        {
-            _context = context;
-        }
+    public async Task<IEnumerable<Client>> GetAllAsync()
+    {
+        var sql = @"SELECT * FROM Clients ORDER BY Id";
+        return await _db.QueryAsync<Client>(sql);
+    }
 
-        public async Task<IEnumerable<Client>> GetAll()
-        {
-            using var connection = _context.CreateConnection();
-            return await connection.QueryAsync<Client>("SELECT * FROM Clients");
-        }
+    public async Task<Client?> GetByIdAsync(int id)
+    {
+        var sql = @"SELECT * FROM Clients WHERE Id = @Id";
+        return await _db.QueryFirstOrDefaultAsync<Client>(sql, new { Id = id });
+    }
 
-        public async Task<Client?> GetById(int id)
-        {
-            using var connection = _context.CreateConnection();
-            return await connection.QuerySingleOrDefaultAsync<Client>(
-                "SELECT * FROM Clients WHERE Id = @Id", new { Id = id });
-        }
+    public async Task<int> CreateAsync(Client client)
+    {
+        var sql = @"
+            INSERT INTO Clients
+            (FullName, DocumentNumber, Address, Phone)
+            VALUES (@FullName, @DocumentNumber, @Address, @Phone)
+            RETURNING Id";
 
-        public async Task<int> Create(Client client)
-        {
-            using var connection = _context.CreateConnection();
+        return await _db.ExecuteScalarAsync<int>(sql, client);
+    }
 
-            // Validar DocumentoIdentidad único
-            var exists = await connection.ExecuteScalarAsync<int>(
-                "SELECT COUNT(*) FROM Clients WHERE DocumentNumber = @DocumentNumber",
-                new { client.DocumentNumber });
+    public async Task<bool> UpdateAsync(Client client)
+    {
+        var sql = @"
+            UPDATE Clients
+            SET FullName = @FullName,
+                DocumentNumber = @DocumentNumber,
+                Address = @Address,
+                Phone = @Phone
+            WHERE Id = @Id";
 
-            if (exists > 0)
-                throw new Exception("Documento de identidad ya registrado");
+        var rows = await _db.ExecuteAsync(sql, client);
+        return rows > 0;
+    }
 
-            var sql = @"INSERT INTO Clients (FullName, DocumentNumber, Address, Phone)
-                        VALUES (@FullName, @DocumentNumber, @Address, @Phone)
-                        RETURNING Id;";
-            return await connection.ExecuteScalarAsync<int>(sql, client);
-        }
-
-        public async Task Update(Client client)
-        {
-            using var connection = _context.CreateConnection();
-            var sql = @"UPDATE Clients
-                        SET FullName = @FullName, DocumentNumber = @DocumentNumber,
-                            Address = @Address, Phone = @Phone
-                        WHERE Id = @Id;";
-            await connection.ExecuteAsync(sql, client);
-        }
-
-        public async Task Delete(int id)
-        {
-            using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("DELETE FROM Clients WHERE Id = @Id", new { Id = id });
-        }
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var sql = @"DELETE FROM Clients WHERE Id = @Id";
+        var rows = await _db.ExecuteAsync(sql, new { Id = id });
+        return rows > 0;
     }
 }
