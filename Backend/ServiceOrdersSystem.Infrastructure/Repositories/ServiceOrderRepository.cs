@@ -1,141 +1,61 @@
-using System.Text;
+using System.Data;
 using Dapper;
 using ServiceOrdersSystem.Domain.Entities;
-using ServiceOrdersSystem.Infrastructure.Data;
+using ServiceOrdersSystem.Application.Interfaces;
 
-namespace ServiceOrdersSystem.Infrastructure.Repositories
+namespace ServiceOrdersSystem.Infrastructure.Repositories;
+
+public class ServiceOrderRepository : IServiceOrderRepository
 {
-    public class ServiceOrderRepository
+    private readonly IDbConnection _db;
+
+    public ServiceOrderRepository(IDbConnection db)
     {
-        private readonly DapperContext _context;
+        _db = db;
+    }
 
-        public ServiceOrderRepository(DapperContext context)
-        {
-            _context = context;
-        }
+    public async Task<IEnumerable<ServiceOrder>> GetAllAsync()
+    {
+        var sql = @"SELECT * FROM ServiceOrders ORDER BY Id";
+        return await _db.QueryAsync<ServiceOrder>(sql);
+    }
 
-        public async Task<IEnumerable<ServiceOrder>> GetAll()
-        {
-            using var connection = _context.CreateConnection();
-            return await connection.QueryAsync<ServiceOrder>("SELECT * FROM ServiceOrders");
-        }
+    public async Task<ServiceOrder?> GetByIdAsync(int id)
+    {
+        var sql = @"SELECT * FROM ServiceOrders WHERE Id = @Id";
+        return await _db.QueryFirstOrDefaultAsync<ServiceOrder>(sql, new { Id = id });
+    }
 
-        public async Task<ServiceOrder?> GetById(int id)
-        {
-            using var connection = _context.CreateConnection();
-            return await connection.QuerySingleOrDefaultAsync<ServiceOrder>(
-                "SELECT * FROM ServiceOrders WHERE Id = @Id", new { Id = id });
-        }
+    public async Task<int> CreateAsync(ServiceOrder order)
+    {
+        var sql = @"
+            INSERT INTO ServiceOrders
+            (CreatedAt, Status, Description, TechnicianId, ClientId)
+            VALUES (@CreatedAt, @Status, @Description, @TechnicianId, @ClientId)
+            RETURNING Id";
 
-        public async Task<int> Create(ServiceOrder order)
-        {
-            using var connection = _context.CreateConnection();
+        return await _db.ExecuteScalarAsync<int>(sql, order);
+    }
 
-            // Validar que el Técnico exista
-            var technicianExists = await connection.ExecuteScalarAsync<int>(
-                "SELECT COUNT(*) FROM Technicians WHERE Id = @TechnicianId",
-                new { order.TechnicianId });
-            if (technicianExists == 0)
-                throw new Exception("Técnico no existe");
+    public async Task<bool> UpdateAsync(ServiceOrder order)
+    {
+        var sql = @"
+            UPDATE ServiceOrders
+            SET CreatedAt = @CreatedAt,
+                Status = @Status,
+                Description = @Description,
+                TechnicianId = @TechnicianId,
+                ClientId = @ClientId
+            WHERE Id = @Id";
 
-            // Validar que el Cliente exista
-            var clientExists = await connection.ExecuteScalarAsync<int>(
-                "SELECT COUNT(*) FROM Clients WHERE Id = @ClientId",
-                new { order.ClientId });
-            if (clientExists == 0)
-                throw new Exception("Cliente no existe");
+        var rows = await _db.ExecuteAsync(sql, order);
+        return rows > 0;
+    }
 
-            var sql = @"INSERT INTO ServiceOrders (CreatedAt, Status, Description, TechnicianId, ClientId)
-                        VALUES (@CreatedAt, @Status, @Description, @TechnicianId, @ClientId)
-                        RETURNING Id;";
-            return await connection.ExecuteScalarAsync<int>(sql, order);
-        }
-
-        public async Task Update(ServiceOrder order)
-        {
-            using var connection = _context.CreateConnection();
-            var sql = @"UPDATE ServiceOrders
-                        SET Status = @Status, Description = @Description,
-                            TechnicianId = @TechnicianId, ClientId = @ClientId
-                        WHERE Id = @Id;";
-            await connection.ExecuteAsync(sql, order);
-        }
-
-        public async Task Delete(int id)
-        {
-            using var connection = _context.CreateConnection();
-            await connection.ExecuteAsync("DELETE FROM ServiceOrders WHERE Id = @Id", new { Id = id });
-        }
-
-        // Filtered Orders Method
-        public async Task<IEnumerable<dynamic>> FilterOrders(
-            string? estado,
-            string? tecnico,
-            string? especialidad,
-            string? cliente,
-            string? documento,
-            DateTime? fechaInicio,
-            DateTime? fechaFin)
-        {
-            using var connection = _context.CreateConnection();
-
-            var sql = new StringBuilder(@"
-                SELECT 
-                    o.*,
-                    t.FullName AS TecnicoNombre,
-                    c.FullName AS ClienteNombre
-                FROM ServiceOrders o
-                INNER JOIN Technicians t ON o.TechnicianId = t.Id
-                INNER JOIN Clients c ON o.ClientId = c.Id
-                WHERE 1=1
-            ");
-
-            var parameters = new DynamicParameters();
-
-            if (!string.IsNullOrWhiteSpace(estado))
-            {
-                sql.Append(" AND o.Status = @Estado");
-                parameters.Add("Estado", estado);
-            }
-
-            if (!string.IsNullOrWhiteSpace(tecnico))
-            {
-                sql.Append(" AND t.FullName ILIKE @Tecnico");
-                parameters.Add("Tecnico", $"%{tecnico}%");
-            }
-
-            if (!string.IsNullOrWhiteSpace(especialidad))
-            {
-                sql.Append(" AND t.Specialty ILIKE @Especialidad");
-                parameters.Add("Especialidad", $"%{especialidad}%");
-            }
-
-            if (!string.IsNullOrWhiteSpace(cliente))
-            {
-                sql.Append(" AND c.FullName ILIKE @Cliente");
-                parameters.Add("Cliente", $"%{cliente}%");
-            }
-
-            if (!string.IsNullOrWhiteSpace(documento))
-            {
-                sql.Append(" AND c.DocumentNumber = @Documento");
-                parameters.Add("Documento", documento);
-            }
-
-            if (fechaInicio.HasValue)
-            {
-                sql.Append(" AND o.CreatedAt >= @FechaInicio");
-                parameters.Add("FechaInicio", fechaInicio.Value);
-            }
-
-            if (fechaFin.HasValue)
-            {
-                sql.Append(" AND o.CreatedAt <= @FechaFin");
-                parameters.Add("FechaFin", fechaFin.Value);
-            }
-
-            return await connection.QueryAsync<dynamic>(sql.ToString(), parameters);
-        }
-
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var sql = @"DELETE FROM ServiceOrders WHERE Id = @Id";
+        var rows = await _db.ExecuteAsync(sql, new { Id = id });
+        return rows > 0;
     }
 }
