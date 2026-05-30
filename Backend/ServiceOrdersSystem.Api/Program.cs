@@ -16,12 +16,14 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular",
         policy =>
         {
-            policy.WithOrigins("http://localhost:4200") // tu frontend
+            policy.WithOrigins("http://localhost:4200")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
+                .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 👈 agrega OPTIONS
                 .AllowCredentials();
         });
 });
+
 
 // Configuración de conexión a PostgreSQL
 builder.Services.AddScoped<IDbConnection>(sp =>
@@ -90,6 +92,7 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "ServiceOrdersSystem API v1");
 });
 
+app.UseRouting();
 app.UseCors("AllowAngular");
 app.UseAuthentication();
 app.UseAuthorization();
