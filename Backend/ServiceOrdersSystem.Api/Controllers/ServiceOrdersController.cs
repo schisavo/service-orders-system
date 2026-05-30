@@ -63,5 +63,23 @@ namespace ServiceOrdersSystem.Api.Controllers
             await _repository.Delete(id);
             return NoContent();
         }
+
+        // Filter 
+        [HttpGet("filtro")]
+        public async Task<IActionResult> Filter(
+            [FromQuery] string? estado,
+            [FromQuery] string? tecnico,
+            [FromQuery] string? especialidad,
+            [FromQuery] string? cliente,
+            [FromQuery] string? documento,
+            [FromQuery] DateTime? fechaInicio,
+            [FromQuery] DateTime? fechaFin)
+        {
+            var result = await _repository.FilterOrders(
+                estado, tecnico, especialidad, cliente, documento, fechaInicio, fechaFin
+            );
+            return Ok(result);
+        }
+
     }
 }
